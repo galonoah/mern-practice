@@ -7,7 +7,7 @@ import ShowBookList from './components/ShowBookList';
 import ShowBookListDetails from './components/ShowBookDetails';
 import UpdateBookInfo from './components/UpdateBookInfo';
 
-class App extends Componet {
+class App extends Component {
   render() {
     return (
       <Router>
@@ -15,10 +15,10 @@ class App extends Componet {
           <Route exact path='/' component={ShowBookList} />
           <Route path='/create-book' component={CreateBook} />
           <Route path='/edit-book/:id' component={UpdateBookInfo} />
-          <Route path='/show-book/:id' component={ShowBookDetails} />
+          <Route path='/show-book/:id' component={ShowBookListDetails} />
         </div>
       </Router>
-    )
+    );
   }
 }
 
