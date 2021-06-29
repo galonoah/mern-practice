@@ -1,3 +1,5 @@
+import mongodb from "mongodb";
+const ObjectId = mongodb.ObjectID;
 let restaurants;
 
 export default class RestaurantsDAO {
@@ -38,14 +40,14 @@ export default class RestaurantsDAO {
     try {
       cursor = await restaurants.find(query); // Fetch documents in batches to reduce both memory consumption and network bandwidth usage
     } catch (err) {
-        console.error(`Unable to issue find command, ${err}`);
-        return { restaurantsList: [], totalNumRestaurants: 0 };
+      console.error(`Unable to issue find command, ${err}`);
+      return { restaurantsList: [], totalNumRestaurants: 0 };
     }
-    
+
     const displayCursor = cursor
-    .limit(restaurantsPerPage)
-    .skip(restaurantsPerPage * page);
-    
+      .limit(restaurantsPerPage)
+      .skip(restaurantsPerPage * page);
+
     try {
       const restaurantsList = await displayCursor.toArray();
       const totalNumRestaurants = await restaurants.countDocuments(query);
@@ -57,6 +59,62 @@ export default class RestaurantsDAO {
       );
 
       return { restaurantsList: [], totalNumRestaurants: 0 };
+    }
+  }
+
+  static async getRestaurantById(id) {
+    try {
+      const pipeline = [
+        {
+          $match: {
+            _id: new ObjectId(id),
+          },
+        },
+        {
+          $lookup: {
+            from: "reviews",
+            let: {
+              id: "$_id",
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ["$restaurant_id", "$$id"],
+                  },
+                },
+              },
+              {
+                $sort: {
+                  date: -1,
+                },
+              },
+            ],
+            as: "reviews",
+          },
+        },
+        {
+          $addFields: {
+            reviews: "$reviews",
+          },
+        },
+      ];
+
+      return await restaurants.aggregate(pipeline).next();
+    } catch (err) {
+      console.error(`Something went wrong in getRestaurantById: ${err}`);
+      throw new Error(err);
+    }
+  }
+
+  static async getCuisines() {
+    let cuisines = [];
+    try {
+      cuisines = await restaurants.distinct("cuisine");
+      return cuisines;
+    } catch (err) {
+      console.error(`Unable to get cuisines, ${err}`);
+      return cuisines;
     }
   }
 }
